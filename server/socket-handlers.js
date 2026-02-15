@@ -816,8 +816,6 @@ function extractMentions(content) {
     
     return mentions;
 }
-    return count;
-}
 
 module.exports = {
     setupSocketHandlers,
