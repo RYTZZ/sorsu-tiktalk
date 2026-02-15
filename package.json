@@ -1,0 +1,28 @@
+{
+  "name": "sorsu-tiktalk",
+  "version": "1.0.0",
+  "description": "Anonymous campus chat application for Sorsogon State University",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "keywords": ["chat", "anonymous", "real-time", "socket.io"],
+  "author": "SorSU TikTalk Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "dotenv": "^16.3.1",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

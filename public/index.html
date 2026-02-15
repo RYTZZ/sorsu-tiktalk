@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SorSU TikTalk - Anonymous Campus Chat</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo-container">
+                <h1 class="logo-text">SorSU TikTalk</h1>
+                <p class="tagline">Chat freely, stay anonymous</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="nickname">Nickname</label>
+                    <input 
+                        type="text" 
+                        id="nickname" 
+                        class="form-input" 
+                        placeholder="Enter your nickname" 
+                        minlength="3" 
+                        maxlength="20" 
+                        pattern="[a-zA-Z0-9_-]+"
+                        required
+                    >
+                    <small style="color: var(--text-muted); font-size: 0.85rem;">3-20 characters, letters, numbers, underscore, hyphen only</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="campus">Campus</label>
+                    <select id="campus" class="form-select" required>
+                        <option value="">Select your campus</option>
+                        <option value="bulan">Bulan Campus</option>
+                        <option value="castilla">Castilla Campus</option>
+                        <option value="magallanes">Magallanes Campus</option>
+                        <option value="sorsogon-city">Sorsogon City Campus (Main)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Enter Chat
+                </button>
+            </form>
+
+            <div class="guidelines">
+                <div class="guidelines-title">Community Guidelines</div>
+                <ul>
+                    <li>Respect all community members</li>
+                    <li>No harassment, bullying, or hate speech</li>
+                    <li>Don't share personal information</li>
+                    <li>Report inappropriate content immediately</li>
+                    <li>Remember: Anonymity is a privilege, not a shield for abuse</li>
+                </ul>
+            </div>
+
+            <div class="text-center mt-2">
+                <a href="admin.html" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none;">Admin Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
