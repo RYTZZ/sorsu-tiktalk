@@ -20,6 +20,11 @@ const matchQueue = new Map(); // campus -> array of socket IDs waiting for match
 const activeMatches = new Map(); // socketId -> matched socketId
 const matchConversations = new Map(); // matchId -> array of messages
 
+// Message reactions and interactions
+const messageReactions = new Map(); // messageId -> { emoji -> [socketIds] }
+const messageMentions = new Map(); // socketId -> array of mention notifications
+const dmNotifications = new Map(); // socketId -> count of unread DMs
+
 const MAX_MESSAGES_PER_CAMPUS = 100;
 const MAX_MATCH_MESSAGES = 50;
 
@@ -101,6 +106,9 @@ function setupSocketHandlers(io) {
                     return;
                 }
                 
+                // Check for mentions and extract them
+                const mentions = extractMentions(content);
+                
                 const message = {
                     id: generateMessageId(),
                     nickname: user.nickname,
@@ -108,7 +116,10 @@ function setupSocketHandlers(io) {
                     content,
                     timestamp: new Date().toISOString(),
                     edited: false,
-                    deleted: false
+                    deleted: false,
+                    replyTo: data.replyTo || null, // Thread/reply support
+                    mentions: mentions,
+                    reactions: {}
                 };
                 
                 // Store message (keep last 100)
@@ -124,6 +135,35 @@ function setupSocketHandlers(io) {
                 
                 // Broadcast to campus room
                 io.to(user.campus).emit('message:receive', message);
+                
+                // Send notifications to mentioned users
+                if (mentions.length > 0) {
+                    for (const mentionedNick of mentions) {
+                        // Find mentioned user's socket
+                        for (const [socketId, userData] of onlineUsers.entries()) {
+                            if (userData.nickname === mentionedNick && userData.campus === user.campus) {
+                                io.to(socketId).emit('mention:notification', {
+                                    messageId: message.id,
+                                    from: user.nickname,
+                                    content: message.content,
+                                    campus: user.campus,
+                                    timestamp: message.timestamp
+                                });
+                                
+                                // Store notification
+                                if (!messageMentions.has(socketId)) {
+                                    messageMentions.set(socketId, []);
+                                }
+                                messageMentions.get(socketId).push({
+                                    messageId: message.id,
+                                    from: user.nickname,
+                                    read: false
+                                });
+                                break;
+                            }
+                        }
+                    }
+                }
                 
             } catch (err) {
                 console.error('Error in message:send:', err);
@@ -285,8 +325,202 @@ function setupSocketHandlers(io) {
                 socket.emit('dm:receive', dmMessage);
                 io.to(recipientSocketId).emit('dm:receive', dmMessage);
                 
+                // Notify recipient of new DM
+                io.to(recipientSocketId).emit('dm:notification', {
+                    from: sender.nickname,
+                    preview: cleanContent.substring(0, 50) + (cleanContent.length > 50 ? '...' : '')
+                });
+                
+                // Update unread count
+                const currentCount = dmNotifications.get(recipientSocketId) || 0;
+                dmNotifications.set(recipientSocketId, currentCount + 1);
+                io.to(recipientSocketId).emit('dm:unread:update', { 
+                    count: currentCount + 1 
+                });
+                
             } catch (err) {
                 console.error('Error in dm:send:', err);
+            }
+        });
+        
+        // Message Reactions
+        socket.on('message:react', async (data) => {
+            try {
+                const user = onlineUsers.get(socket.id);
+                if (!user) return;
+                
+                const { messageId, emoji } = data;
+                
+                if (!messageId || !emoji) return;
+                
+                // Initialize reactions for this message if not exists
+                if (!messageReactions.has(messageId)) {
+                    messageReactions.set(messageId, {});
+                }
+                
+                const reactions = messageReactions.get(messageId);
+                
+                // Initialize emoji array if not exists
+                if (!reactions[emoji]) {
+                    reactions[emoji] = [];
+                }
+                
+                // Toggle reaction (add or remove)
+                const userIndex = reactions[emoji].indexOf(socket.id);
+                if (userIndex === -1) {
+                    // Add reaction
+                    reactions[emoji].push(socket.id);
+                } else {
+                    // Remove reaction
+                    reactions[emoji].splice(userIndex, 1);
+                    // Clean up empty emoji arrays
+                    if (reactions[emoji].length === 0) {
+                        delete reactions[emoji];
+                    }
+                }
+                
+                // Broadcast reaction update to campus
+                io.to(user.campus).emit('message:reaction:update', {
+                    messageId,
+                    reactions: Object.keys(reactions).reduce((acc, emoji) => {
+                        acc[emoji] = reactions[emoji].length;
+                        return acc;
+                    }, {})
+                });
+                
+            } catch (err) {
+                console.error('Error in message:react:', err);
+            }
+        });
+        
+        // DM: Start conversation
+        socket.on('dm:start', (data) => {
+            try {
+                const user = onlineUsers.get(socket.id);
+                if (!user) return;
+                
+                const { withNickname } = data;
+                
+                // Find the other user
+                let found = false;
+                for (const [socketId, userData] of onlineUsers.entries()) {
+                    if (userData.nickname === withNickname && userData.campus === user.campus) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    socket.emit('error', { message: 'User not found or offline' });
+                    return;
+                }
+                
+                socket.emit('dm:started', { 
+                    withNickname,
+                    campus: user.campus
+                });
+                
+            } catch (err) {
+                console.error('Error in dm:start:', err);
+            }
+        });
+        
+        // DM: Mark as read
+        socket.on('dm:read', (data) => {
+            try {
+                const { fromNickname } = data;
+                const currentCount = dmNotifications.get(socket.id) || 0;
+                
+                if (currentCount > 0) {
+                    dmNotifications.set(socket.id, Math.max(0, currentCount - 1));
+                    socket.emit('dm:unread:update', { 
+                        count: Math.max(0, currentCount - 1)
+                    });
+                }
+            } catch (err) {
+                console.error('Error in dm:read:', err);
+            }
+        });
+        
+        // DM: Typing indicators
+        socket.on('dm:typing', (data) => {
+            try {
+                const user = onlineUsers.get(socket.id);
+                if (!user) return;
+                
+                const { toNickname } = data;
+                
+                // Find recipient
+                for (const [socketId, userData] of onlineUsers.entries()) {
+                    if (userData.nickname === toNickname && userData.campus === user.campus) {
+                        io.to(socketId).emit('dm:user:typing', {
+                            from: user.nickname,
+                            typing: true
+                        });
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.error('Error in dm:typing:', err);
+            }
+        });
+        
+        socket.on('dm:stop-typing', (data) => {
+            try {
+                const user = onlineUsers.get(socket.id);
+                if (!user) return;
+                
+                const { toNickname } = data;
+                
+                // Find recipient
+                for (const [socketId, userData] of onlineUsers.entries()) {
+                    if (userData.nickname === toNickname && userData.campus === user.campus) {
+                        io.to(socketId).emit('dm:user:typing', {
+                            from: user.nickname,
+                            typing: false
+                        });
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.error('Error in dm:stop-typing:', err);
+            }
+        });
+        
+        // Get online users list (for DM)
+        socket.on('users:list', () => {
+            try {
+                const user = onlineUsers.get(socket.id);
+                if (!user) return;
+                
+                const usersList = [];
+                for (const [socketId, userData] of onlineUsers.entries()) {
+                    if (userData.campus === user.campus && socketId !== socket.id) {
+                        usersList.push({
+                            nickname: userData.nickname,
+                            campus: userData.campus
+                        });
+                    }
+                }
+                
+                socket.emit('users:list:response', usersList);
+            } catch (err) {
+                console.error('Error in users:list:', err);
+            }
+        });
+        
+        // Mark mention as read
+        socket.on('mention:read', (data) => {
+            try {
+                const { messageId } = data;
+                const mentions = messageMentions.get(socket.id) || [];
+                
+                const mention = mentions.find(m => m.messageId === messageId);
+                if (mention) {
+                    mention.read = true;
+                }
+            } catch (err) {
+                console.error('Error in mention:read:', err);
             }
         });
         
@@ -542,6 +776,10 @@ function setupSocketHandlers(io) {
                     activeMatches.delete(socket.id);
                 }
                 
+                // Clean up mentions and DM notifications
+                messageMentions.delete(socket.id);
+                dmNotifications.delete(socket.id);
+                
                 onlineUsers.delete(socket.id);
                 console.log(`${user.nickname} disconnected`);
             }
@@ -560,6 +798,24 @@ function getOnlineCount(campus) {
             count++;
         }
     }
+    return count;
+}
+
+// Extract @mentions from message content
+function extractMentions(content) {
+    const mentionRegex = /@([a-zA-Z0-9_-]{3,20})/g;
+    const mentions = [];
+    let match;
+    
+    while ((match = mentionRegex.exec(content)) !== null) {
+        const nickname = match[1];
+        if (!mentions.includes(nickname)) {
+            mentions.push(nickname);
+        }
+    }
+    
+    return mentions;
+}
     return count;
 }
 

@@ -149,7 +149,8 @@ function sendMessage() {
 
     socket.emit('message:send', {
         content,
-        campus: currentCampus
+        campus: currentCampus,
+        replyTo: replyingTo ? replyingTo.messageId : null
     });
 
     messageInput.value = '';
@@ -158,6 +159,11 @@ function sendMessage() {
     document.getElementById('sendBtn').disabled = true;
 
     socket.emit('typing:stop');
+    
+    // Clear reply if set
+    if (typeof cancelReply === 'function') {
+        cancelReply();
+    }
 }
 
 function displayMessage(message) {
@@ -181,6 +187,12 @@ function displayMessage(message) {
     }
 
     const isOwnMessage = message.nickname === currentUser.nickname;
+    
+    // Highlight mentions if function exists
+    let displayContent = escapeHtml(message.content);
+    if (typeof highlightMentions === 'function') {
+        displayContent = highlightMentions(displayContent);
+    }
 
     messageEl.innerHTML = `
         <div class="message-header">
@@ -188,9 +200,11 @@ function displayMessage(message) {
             <span class="campus-badge ${message.campus}">${getCampusName(message.campus)}</span>
             <span class="message-time">${formatTime(message.timestamp)}</span>
         </div>
-        <div class="message-content">${escapeHtml(message.content)}</div>
+        <div class="message-content">${displayContent}</div>
         ${!message.deleted ? `
             <div class="message-actions">
+                <button class="message-btn" onclick="if(typeof openEmojiPicker === 'function') openEmojiPicker('${message.id}')">React</button>
+                <button class="message-btn" onclick="if(typeof replyToMessage === 'function') replyToMessage('${message.id}', '${escapeHtml(message.nickname)}', '${escapeHtml(message.content)}')">Reply</button>
                 ${isOwnMessage ? `
                     <button class="message-btn" onclick="editMessage('${message.id}')">Edit</button>
                     <button class="message-btn" onclick="deleteMessage('${message.id}')">Delete</button>

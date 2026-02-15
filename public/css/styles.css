@@ -881,3 +881,245 @@ tr:hover {
         transform: translateY(0);
     }
 }
+
+/* Notification Badge */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Message Reactions */
+.message-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.reaction-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.reaction-item:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.reaction-item.user-reacted {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.reaction-count {
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* Emoji Picker */
+.emoji-btn {
+    font-size: 2rem;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.emoji-btn:hover {
+    transform: scale(1.2);
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+}
+
+/* Reply/Thread Indicator */
+.reply-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.reply-preview {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cancel-reply {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.cancel-reply:hover {
+    color: var(--danger);
+}
+
+/* Mention Highlight */
+.mention {
+    background: rgba(74, 144, 226, 0.2);
+    color: var(--accent-primary);
+    padding: 0.125rem 0.25rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .mention {
+    background: rgba(74, 144, 226, 0.3);
+}
+
+/* DM List Item */
+.dm-item {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.dm-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(4px);
+}
+
+.dm-item.unread {
+    background: rgba(74, 144, 226, 0.1);
+    border-left: 3px solid var(--accent-primary);
+}
+
+.dm-item-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.dm-item-preview {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dm-unread-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: var(--danger);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* Notification Item */
+.notification-item {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid var(--accent-primary);
+}
+
+.notification-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.notification-item.unread {
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.notification-type {
+    font-weight: 600;
+    color: var(--accent-primary);
+    font-size: 0.85rem;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.notification-content {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Online User Item (for DM selection) */
+.online-user-item {
+    padding: 0.875rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.online-user-item:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateX(4px);
+}
+
+.user-nickname {
+    font-weight: 600;
+}
+
+.user-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.online-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+}
+
